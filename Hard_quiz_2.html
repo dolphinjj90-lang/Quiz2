@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CTF Gamers Quiz</title>
+  <style>
+   body {
+  margin: 0;
+  font-family: 'Orbitron', sans-serif;
+  color: #fff;
+  background: black;
+  /* removed overflow: hidden */
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, rgba(255,0,200,.2) 1px, transparent 1px),
+              linear-gradient(0deg, rgba(0,200,255,.2) 1px, transparent 1px);
+  background-size: 40px 40px;
+  animation: movegrid 10s linear infinite;
+  z-index: -1;
+}
+    
+    @keyframes movegrid {
+      from { background-position: 0 0; }
+      to { background-position: 40px 40px; }
+    }
+
+    .container {
+      text-align: center;
+      padding: 20px;
+      max-width: 900px;
+      margin: auto;
+    }
+
+    h1 {
+      font-size: 3rem;
+      text-shadow: 0 0 10px #f0f, 0 0 20px #0ff;
+    }
+
+    button {
+      background: none;
+      border: 2px solid #0ff;
+      padding: 10px 20px;
+      color: #0ff;
+      font-size: 1.2rem;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #0ff;
+      color: black;
+    }
+
+    #quiz {
+      display: none;
+      margin-top: 20px;
+    }
+    .question {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .question h3 {
+      margin: 0 0 10px 0;
+    }
+
+    #timer {
+      font-size: 1.5rem;
+      margin: 20px 0;
+      color: #ff4081;
+      text-shadow: 0 0 10px #ff4081;
+    }
+
+    #result {
+      display: none;
+      font-size: 2rem;
+      margin-top: 20px;
+    }
+
+    /* Gamer popup */
+    #gamerPopup {
+      display: none;
+      position: fixed;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: black;
+      padding: 40px;
+      border: 3px solid #0ff;
+      font-size: 3rem;
+      color: #0ff;
+      text-shadow: 0 0 20px #0ff, 0 0 40px #f0f;
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>CTF Gamers Quiz</h1>
+    <button id="startBtn">Start Quiz</button>
+
+    <div id="quiz">
+      <div id="timer">Time Left: 20:00</div>
+      <form id="quizForm"></form>
+      <button type="button" onclick="submitQuiz()">Submit</button>
+    </div>
+
+    <div id="result"></div>
+    <div id="gamerPopup">GAMER</div>
+  </div>
+
+  <script>
+    // Disable right-click and shortcuts
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('keydown', e => {
+      if (
+        e.ctrlKey && ['u','U','l','L'].includes(e.key) ||
+        e.key === 'F12'
+      ) e.preventDefault();
+    });
+
+    const questions = [
+      // === VALORANT ===
+      {q:"In Valorant, which agent uses the ability 'Leer'?",a:["Omen","Phoenix","Reyna","Cypher"],c:2},
+      {q:"Which map has teleporters that connect different parts of the map?",a:["Ascent","Bind","Haven","Split"],c:1},
+      {q:"The gun 'Operator' is what type of weapon?",a:["Rifle","Sniper","SMG","Shotgun"],c:1},
+      {q:"Jett’s ultimate ability is called?",a:["Blade Storm","Cloudburst","Updraft","Tailwind"],c:0},
+      {q:"Which Valorant agent can place tripwires?",a:["Killjoy","Sova","Cypher","Viper"],c:2},
+      {q:"How many spike plant sites does Haven have?",a:["2","3","1","4"],c:1},
+      {q:"Which agent releases drones to scout?",a:["Sova","Omen","Breach","Sage"],c:0},
+      {q:"Valorant was officially released in what year?",a:["2018","2019","2020","2021"],c:2},
+      {q:"The Sheriff in Valorant is what kind of gun?",a:["SMG","Revolver","Rifle","Shotgun"],c:1},
+      {q:"Who developed Valorant?",a:["Valve","Riot Games","Epic Games","Ubisoft"],c:1},
+
+      // === ROBLOX ===
+      {q:"Roblox was officially released in which year?",a:["2004","2006","2010","2012"],c:1},
+      {q:"What is the in-game currency in Roblox called?",a:["Robux","Blocks","Coins","Credits"],c:0},
+      {q:"Roblox was originally called?",a:["Dynablocks","BlockWorld","GameX","Playblox"],c:0},
+      {q:"Which Roblox game is about escaping disasters on a small map?",a:["Adopt Me","Natural Disaster Survival","Bloxburg","Tower Defense"],c:1},
+      {q:"Who is the co-founder of Roblox?",a:["Markus Persson","David Baszucki","Gabe Newell","Shigeru Miyamoto"],c:1},
+      {q:"What engine powers Roblox?",a:["Unity","Unreal","Custom engine","CryEngine"],c:2},
+      {q:"In Roblox Studio, what language is used for scripting?",a:["Python","Lua","C#","Java"],c:1},
+      {q:"Which Roblox game became massively popular for trading and raising pets?",a:["Adopt Me!","MeepCity","Brookhaven","Jailbreak"],c:0},
+      {q:"What event type is often held by Roblox annually?",a:["Egg Hunt","Treasure Fest","Gold Rush","Pixel Hunt"],c:0},
+      {q:"What is the maximum friends limit in Roblox (as of 2024)?",a:["100","200","500","1000"],c:1},
+
+      // === MINECRAFT ===
+      {q:"What is the strongest material for tools in vanilla Minecraft (pre-netherite)?",a:["Diamond","Gold","Iron","Stone"],c:0},
+      {q:"Netherite was added in which version?",a:["1.14","1.15","1.16","1.17"],c:2},
+      {q:"What mob drops Ender Pearls?",a:["Zombie","Creeper","Enderman","Blaze"],c:2},
+      {q:"Which block can transport redstone signals vertically?",a:["Slime Block","Honey Block","Observer","Piston"],c:2},
+      {q:"What is required to cure a zombie villager?",a:["Golden Apple + Weakness Potion","Milk + Gold","Enchanted Apple","Totem"],c:0},
+      {q:"Minecraft was created by?",a:["Markus Persson","David Baszucki","Riot Games","Valve"],c:0},
+      {q:"Which boss is summoned using Wither Skeleton skulls?",a:["Ender Dragon","Wither","Guardian","Illager"],c:1},
+      {q:"Which biome has pandas?",a:["Swamp","Jungle","Desert","Taiga"],c:1},
+      {q:"The enchantment 'Silk Touch' does what?",a:["Increases damage","Keeps blocks intact","Faster mining","Extra XP"],c:1},
+      {q:"Strongholds can be located using?",a:["Compass","Ender Pearls","Eyes of Ender","Totem"],c:2},
+      {q:"What dimension has End Cities?",a:["Overworld","Nether","End","Skylands"],c:2},
+      {q:"Phantoms attack players who haven't slept for how many days?",a:["1","2","3","4"],c:2},
+      {q:"What material do you need to craft a beacon?",a:["Diamond","Emerald","Nether Star","Obsidian"],c:2},
+      {q:"Which block is used to brew potions?",a:["Furnace","Brewing Stand","Cauldron","Anvil"],c:1},
+      {q:"Which hostile mob explodes when close?",a:["Zombie","Creeper","Spider","Skeleton"],c:1},
+
+      // === GENSHIN IMPACT ===
+      {q:"Which nation is ruled by the Electro Archon?",a:["Liyue","Mondstadt","Inazuma","Sumeru"],c:2},
+      {q:"Zhongli is associated with which element?",a:["Geo","Hydro","Anemo","Pyro"],c:0},
+      {q:"Diluc primarily uses what weapon type?",a:["Sword","Polearm","Claymore","Bow"],c:2},
+      {q:"Which artifact set boosts Hydro DMG the most?",a:["Gladiator","Heart of Depth","Thundersoother","Viridescent"],c:1},
+      {q:"What is Paimon often jokingly referred to as?",a:["Food","Pet","Fairy","Guide"],c:0},
+      {q:"Which character is known as the 'Kreideprinz'?",a:["Albedo","Kaeya","Xiao","Kazuha"],c:0},
+      {q:"What is the name of the Hydro Archon of Fontaine?",a:["Furina","Nahida","Ei","Venti"],c:0},
+      {q:"The Spiral Abyss is located where?",a:["Mondstadt","Inazuma","Liyue","Enkanomiya"],c:2},
+      {q:"Who is the Dendro Archon?",a:["Nahida","Raiden Shogun","Zhongli","Venti"],c:0},
+      {q:"Which element is strong against Hydro shields?",a:["Pyro","Electro","Geo","Cryo"],c:0},
+      {q:"Traveler's sibling (in cutscenes) is called?",a:["Aether/Lumine","Kael","Lumine/Aether","Both A and C"],c:3},
+      {q:"What weapon does Tartaglia (Childe) switch between?",a:["Sword & Bow","Polearm & Bow","Melee & Bow","Claymore & Bow"],c:2},
+      {q:"What limited-time area was introduced in 1.6?",a:["Dragonspine","Golden Apple Archipelago","Enkanomiya","Chasm"],c:1},
+      {q:"Which boss drops 'Everflame Seed'?",a:["Cryo Regisvine","Pyro Regisvine","Oceanid","Hydro Hypostasis"],c:1},
+      {q:"Who is the current Dendro Archon as of Sumeru release?",a:["Nahida","Cyno","Collei","Tighnari"],c:0}
+    ];
+
+    const startBtn = document.getElementById("startBtn");
+    const quizDiv = document.getElementById("quiz");
+    const quizForm = document.getElementById("quizForm");
+    const resultDiv = document.getElementById("result");
+    const gamerPopup = document.getElementById("gamerPopup");
+    const timerDiv = document.getElementById("timer");
+    let timer, timeLeft = 20 * 60;
+
+    startBtn.onclick = () => {
+      startBtn.style.display = "none";
+      quizDiv.style.display = "block";
+      loadQuestions();
+      startTimer();
+    };
+
+    function loadQuestions() {
+      questions.forEach((item, i) => {
+        const div = document.createElement("div");
+        div.className = "question";
+        div.innerHTML = `<h3>Q${i+1}. ${item.q}</h3>`;
+        item.a.forEach((ans, j) => {
+          div.innerHTML += `
+            <label>
+              <input type="radio" name="q${i}" value="${j}"> ${ans}
+            </label><br>`;
+        });
+        quizForm.appendChild(div);
+      });
+    }
+
+    function startTimer() {
+      timer = setInterval(() => {
+        let m = Math.floor(timeLeft / 60);
+        let s = timeLeft % 60;
+        timerDiv.textContent = `Time Left: ${m}:${s<10?'0':''}${s}`;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          submitQuiz();
+        }
+        timeLeft--;
+      }, 1000);
+    }
+
+    function submitQuiz() {
+      clearInterval(timer);
+      let score = 0;
+      questions.forEach((q, i) => {
+        const ans = document.querySelector(`input[name=q${i}]:checked`);
+        if (ans && parseInt(ans.value) === q.c) score++;
+      });
+      quizDiv.style.display = "none";
+      resultDiv.style.display = "block";
+      resultDiv.textContent = `You scored ${score}/45`;
+      if (score >= 35) {
+        gamerPopup.style.display = "block";
+      }
+    }
+  </script>
+</body>
+</html>
